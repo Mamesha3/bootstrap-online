@@ -1,0 +1,557 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Bootstrap 0→Hero — Online (Desktop-first)</title>
+
+<!-- Light-weight UI CSS (we'll style rest ourselves) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#071019; --panel:#0e1a24; --muted:#9fb0bf; --accent:#3dd6c9; --card:#0b1220;
+    --editor-bg:#08121b; --editor-fg:#dff6f1;
+  }
+  html,body{height:100%;margin:0;background:
+    radial-gradient(1200px 500px at 10% 10%, rgba(61,214,201,0.03), transparent),
+    linear-gradient(180deg,#071019,#041018 120%); color:#e9f5f6; font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto, Arial;}
+  /* desktop-only layout tuned to 13-14" typical width */
+  .app { display:flex; gap:18px; padding:18px; height:100vh; box-sizing:border-box; }
+  .sidebar { width:320px; background:linear-gradient(180deg,var(--panel), #071019); border-radius:10px; padding:14px; overflow:auto; }
+  .main { flex:1; display:flex; flex-direction:column; gap:12px; min-width:820px; }
+  .header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .lesson-title { font-size:1.25rem; font-weight:700; color:#fff; }
+  .theory { background:var(--card); padding:14px; border-radius:8px; color:var(--muted); line-height:1.5; min-height:80px; }
+  .editorArea { display:flex; gap:12px; height:62vh; }
+  .editorPanel { width:54%; display:flex; flex-direction:column; gap:8px; }
+  .previewPanel { flex:1; border-radius:8px; overflow:hidden; background:#fff; border:1px solid rgba(255,255,255,0.04); }
+  .code-toolbar { display:flex; justify-content:space-between; gap:8px; align-items:center; }
+  .taskBox, .quizBox { background:rgba(255,255,255,0.02); padding:10px; border-radius:6px; color:var(--muted); }
+  .small { font-size:0.9rem; color:var(--muted); }
+  .lesson-item{padding:8px;border-radius:6px;cursor:pointer;color:#e8f7f6;display:flex;justify-content:space-between;align-items:center;}
+  .lesson-item:hover{background:rgba(255,255,255,0.02)}
+  .lesson-item.active{background:linear-gradient(90deg, rgba(61,214,201,0.08), rgba(61,214,201,0.02)); border-left:4px solid var(--accent)}
+  .editorFrame { height:100%; border-radius:6px; overflow:hidden; border:1px solid rgba(255,255,255,0.03); }
+  .danger{color:#ff7a7a}
+  /* desktop only: prevent use on small screens - show notice */
+  .mobileNotice{display:none}
+  @media (max-width:1199px){
+    .app{padding:8px;flex-direction:column;}
+    .sidebar{width:100%;height:220px;order:2}
+    .main{order:1;min-width:0}
+    .editorArea{flex-direction:column;height:60vh}
+    .editorPanel{width:100%}
+    .mobileNotice{display:block;background:#1b2b33;color:#e6f7f2;padding:12px;border-radius:8px;margin-bottom:12px}
+  }
+  /* small tweaks to buttons */
+  .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#e6f7f2}
+  .badge-done{background:#16a34a;color:#021; padding:4px 8px;border-radius:12px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="app" role="application" aria-label="Bootstrap learning app (desktop)">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" aria-label="Lessons">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <div style="width:44px;height:44px;border-radius:8px;background:linear-gradient(180deg,#17313b,#0f2a33);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent)">BS</div>
+      <div>
+        <div style="font-weight:700">Bootstrap 0 → Hero (Desktop)</div>
+        <div class="small">Optimized for 13–14" laptops (≥1200px)</div>
+      </div>
+    </div>
+
+    <div id="lessonList" class="mb-3" aria-label="Lesson list"></div>
+
+    <div class="mt-3 small">Progress: <span id="progressCount">0</span>/10</div>
+    <div class="mt-3 small">Tip: edit the example in the left editor and click <strong>Run</strong> to preview.</div>
+
+    <hr style="border-color:rgba(255,255,255,0.03)">
+    <div class="d-grid gap-2">
+      <button id="resetBtn" class="btn btn-outline-secondary btn-sm">Reset progress</button>
+      <button id="downloadBtn" class="btn btn-primary btn-sm" disabled>Download Final Project</button>
+    </div>
+
+    <div style="height:12px"></div>
+    <div class="small text-muted mt-2">Large lessons (images/scripts) are lazy-loaded for performance.</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="mobileNotice text-center">
+      This app is desktop-first. For best experience use a 13–14" laptop (screen width ≥ 1200px). On small screens features are limited.
+    </div>
+
+    <div class="header">
+      <div>
+        <div id="lessonTitle" class="lesson-title">Lesson title</div>
+        <div id="lessonSubtitle" class="small">subtitle</div>
+      </div>
+      <div class="small">Status: <span id="lessonStatus">Not started</span></div>
+    </div>
+
+    <div id="theory" class="theory">Lesson theory appears here.</div>
+
+    <div class="editorArea" role="main">
+      <div class="editorPanel">
+        <div class="code-toolbar">
+          <div class="small">Editable example (HTML). You can write code here.</div>
+          <div class="d-flex gap-2">
+            <button id="lazyLoadEditor" class="btn btn-ghost btn-sm">Load Editor</button>
+            <button id="runBtn" class="btn btn-primary btn-sm">Run</button>
+            <button id="resetExample" class="btn btn-outline-light btn-sm">Reset</button>
+          </div>
+        </div>
+
+        <!-- Ace editor holder (lazy-loaded) -->
+        <div id="editorHolder" class="editorFrame" style="height:100%;background:var(--editor-bg);color:var(--editor-fg)">
+          <div id="editorFake" style="padding:12px;color:var(--muted)">Editor not loaded (click "Load Editor").</div>
+        </div>
+
+        <div class="d-flex gap-2" style="margin-top:6px">
+          <button id="checkBtn" class="btn btn-success btn-sm">Check Answer</button>
+          <div id="checkFeedback" class="small">No check yet</div>
+        </div>
+
+        <div id="task" class="taskBox mt-2">Practice task will appear here.</div>
+        <div id="quiz" class="quizBox mt-2"></div>
+      </div>
+
+      <div class="previewPanel">
+        <iframe id="preview" title="Live preview" style="width:100%;height:100%;border:0;background:white"></iframe>
+      </div>
+    </div>
+
+    <footer style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;color:var(--muted)">
+      <div>Built for practice — autosaves to browser</div>
+      <div class="d-flex gap-2">
+        <button id="notesBtn" class="btn btn-ghost btn-sm">How to use</button>
+        <button id="downloadFinal" class="btn btn-outline-light btn-sm" disabled>Download Final</button>
+      </div>
+    </footer>
+  </main>
+</div>
+
+<!-- Lazy load Ace (editor) only when needed -->
+<script>
+/* App logic:
+   - lessons[] contains lesson data (title, theory, example, task, check function, quiz)
+   - editor loads lazily (Ace)
+   - preview created via iframe.srcdoc to avoid cross-origin
+   - checkAnswer runs the lesson-specific JS to validate and provides corrective feedback
+   - images in lesson examples use loading="lazy" to save bandwidth
+*/
+const LESSON_KEY = 'bs_online_progress_v1';
+let progress = JSON.parse(localStorage.getItem(LESSON_KEY)) || Array(10).fill(false);
+
+// Minimal lessons array (10). For brevity I'm including example content, images load lazily
+const lessons = [
+  /* 1 */ {
+    id:'l1', title:'Intro & Setup', subtitle:'What is Bootstrap & quick CDN setup',
+    theory: 'Bootstrap is a CSS framework for building responsive websites quickly. This lesson shows how to include Bootstrap via CDN (fast) and where to place the JS bundle for interactive components.',
+    example: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head><body class="bg-light">
+<div class="container vh-100 d-flex align-items-center justify-content-center">
+  <div class="text-center">
+    <h1 class="display-5">Bootstrap Setup</h1>
+    <p class="lead">CDN is fastest for learning.</p>
+    <button class="btn btn-primary">Primary</button>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body></html>`,
+    task: 'Task: center the container vertically using vh-100 and d-flex align-items-center (edit the code to include these classes).',
+    check: function(src){
+      const ok = /vh-100/i.test(src) && /d-flex/i.test(src) && /align-items-center/i.test(src);
+      return {ok, message: ok ? 'Good — container centered.' : 'Hint: add vh-100 on container and use d-flex + align-items-center.'};
+    },
+    quiz: { q:'Fastest way to include Bootstrap for learning?', options:['npm install','CDN link','Write CSS manually'], answer:1 }
+  },
+
+  /* 2 */ {
+    id:'l2', title:'Containers & Grid', subtitle:'Rows, cols and breakpoints',
+    theory: 'Containers (.container / .container-fluid) wrap content. Use .row and .col-* classes to create responsive columns; grid has 12 columns.',
+    example: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head><body>
+<div class="container py-5">
+  <div class="row g-3">
+    <div class="col-md-6"><div class="p-3 bg-light">Column 1</div></div>
+    <div class="col-md-6"><div class="p-3 bg-light">Column 2</div></div>
+  </div>
+</div>
+</body></html>`,
+    task: 'Task: make three columns on large screens using col-lg-4 so they stack on small screens.',
+    check: function(src){
+      const ok = (src.match(/col-lg-4/gi) || []).length >= 3;
+      return {ok, message: ok ? 'Nice — three col-lg-4 columns present.' : 'Add col-lg-4 to each column for a 3-column layout on large screens.'};
+    },
+    quiz: { q:'Bootstrap grid columns per row?', options:['6','12','16'], answer:1 }
+  },
+
+  /* 3 */ {
+    id:'l3', title:'Typography & Colors', subtitle:'display, lead, text utilities',
+    theory: 'Bootstrap provides text utilities and display classes. Use .lead for prominent paragraphs and .text-muted for subtle text.',
+    example: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"></head><body>
+<div class="container py-5">
+  <h1 class="display-6">Hello, world!</h1>
+  <p class="lead text-muted">Lead text goes here.</p>
+</div></body></html>`,
+    task: 'Task: use a display class for title and make subtitle lead + text-muted.',
+    check: function(src){
+      const ok = /display-\d+/i.test(src) && /lead/i.test(src) && /text-muted/i.test(src);
+      return {ok, message: ok ? 'Good — display & lead used.' : 'Use display-* for title and lead + text-muted for subtitle.'};
+    },
+    quiz: { q:'Which class creates a lead paragraph?', options:['lead','display-1','muted'], answer:0 }
+  },
+
+  /* 4 */ {
+    id:'l4', title:'Buttons & Alerts', subtitle:'btn, btn-*, alert, dismissible alerts',
+    theory: 'Buttons are created with .btn and contextual classes (.btn-primary). Alerts show messages and can be dismissible with .alert-dismissible and data attributes.',
+    example: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"></head><body>
+<div class="container py-5">
+  <button class="btn btn-primary me-2">Primary</button>
+  <div class="alert alert-warning alert-dismissible fade show mt-3" role="alert">
+    Warning alert — dismiss me.
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script></body></html>`,
+    task: 'Task: ensure the alert is dismissible (has alert-dismissible and btn-close)',
+    check: function(src){
+      const ok = /alert-dismissible/i.test(src) && /btn-close/i.test(src);
+      return {ok, message: ok ? 'Dismissible alert detected.' : 'Add .alert-dismissible and a button with class btn-close and data-bs-dismiss="alert".'};
+    },
+    quiz: { q:'Class for primary button?', options:['btn-primary','primary-btn','btn-main'], answer:0 }
+  },
+
+  /* 5 */ {
+    id:'l5', title:'Navbar & Dropdowns', subtitle:'responsive navbar & ms-auto',
+    theory: 'The navbar collapses on small screens. Use .navbar, .navbar-expand-lg, .navbar-toggler and .collapse. Use ms-auto to push links to the right.',
+    example: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"></head><body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container">
+    <a class="navbar-brand" href="#">Brand</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="#">Home</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script></body></html>`,
+    task: 'Task: ensure navigation links are pushed to the right using ms-auto on the ul',
+    check: function(src){
+      const ok = /ms-auto/i.test(src);
+      return {ok, message: ok ? 'ms-auto present — links align right.' : 'Add ms-auto to the ul containing the nav links.'};
+    },
+    quiz: { q:'Attribute used on toggler to trigger collapse?', options:['data-bs-toggle="collapse"','data-toggle="collapse"','toggle-collapse'], answer:0 }
+  },
+
+  /* 6 */ {
+    id:'l6', title:'Forms & Validation', subtitle:'form-control and required validation',
+    theory: 'Use .form-control for consistent input styling. Add required and type="email" to validate inputs in browser.',
+    example: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"></head><body>
+<div class="container py-5">
+  <form>
+    <div class="mb-3">
+      <label class="form-label">Email</label>
+      <input class="form-control" type="email" required placeholder="you@example.com">
+    </div>
+    <button class="btn btn-primary">Submit</button>
+  </form>
+</div>
+</body></html>`,
+    task: 'Task: ensure email input uses type="email" and required attribute',
+    check: function(src){
+      const ok = /<input[^>]*type=["']email["'][^>]*required/i.test(src);
+      return {ok, message: ok ? 'Email input validated.' : 'Add type="email" and required to the email input.'};
+    },
+    quiz: { q:'Which class styles inputs consistently?', options:['form-control','input-style','control-input'], answer:0 }
+  },
+
+  /* 7 */ {
+    id:'l7', title:'Cards & Media', subtitle:'card component and responsive columns',
+    theory: 'Cards combine images, body, title and buttons. Use .card and .card-body. Combine with grid for responsive galleries.',
+    example: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"></head><body>
+<div class="container py-5">
+  <div class="row g-4">
+    <div class="col-md-4"><div class="card"><img loading="lazy" src="https://via.placeholder.com/400x220" class="card-img-top" alt=""><div class="card-body"><h5 class="card-title">Project A</h5></div></div></div>
+    <div class="col-md-4"><div class="card"><img loading="lazy" src="https://via.placeholder.com/400x220/ddd" class="card-img-top" alt=""><div class="card-body"><h5 class="card-title">Project B</h5></div></div></div>
+  </div>
+</div>
+</body></html>`,
+    task: 'Task: add a third project card with col-md-4 so there are three cards on medium+ screens',
+    check: function(src){
+      const count = (src.match(/col-md-4/gi) || []).length;
+      const ok = count >= 3;
+      return {ok, message: ok ? 'Three or more cards detected.' : 'Add a third .col-md-4 with a card inside.'};
+    },
+    quiz: { q:'Which class makes an image responsive?', options:['img-fluid','img-responsive','img-scale'], answer:0 }
+  },
+
+  /* 8 */ {
+    id:'l8', title:'Modals & Offcanvas', subtitle:'interactive overlays',
+    theory: 'Modals are dialogs and Offcanvas provides side panels. Both use the JS bundle and data attributes to toggle without custom JS.',
+    example: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"></head><body>
+<div class="container py-5">
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#m1">Open Modal</button>
+  <div class="modal fade" id="m1" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Modal</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">Hello</div></div></div></div>
+  <button class="btn btn-secondary" data-bs-toggle="offcanvas" data-bs-target="#o1">Open Panel</button>
+  <div class="offcanvas offcanvas-end" id="o1"><div class="offcanvas-header"><h5>Panel</h5><button class="btn-close" data-bs-dismiss="offcanvas"></button></div><div class="offcanvas-body">Content</div></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body></html>`,
+    task: 'Task: ensure offcanvas-end element and a button with data-bs-toggle="offcanvas" exist',
+    check: function(src){
+      const ok = /offcanvas-end/i.test(src) && /data-bs-toggle=["']offcanvas["']/i.test(src);
+      return {ok, message: ok ? 'Offcanvas toggle and end position detected.' : 'Add offcanvas-end and a toggle with data-bs-toggle="offcanvas".'};
+    },
+    quiz: { q:'Which attribute opens a modal without extra JS?', options:['data-bs-toggle="modal"','open-modal','data-open="modal"'], answer:0 }
+  },
+
+  /* 9 */ {
+    id:'l9', title:'Carousel & Images', subtitle:'sliders and img-fluid',
+    theory: 'Carousels display slides. Use .carousel and .carousel-item; use .img-fluid for responsive images. Indicators help navigation.',
+    example: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"></head><body>
+<div class="container py-5">
+  <div id="c1" class="carousel slide">
+    <div class="carousel-indicators">
+      <button data-bs-target="#c1" data-bs-slide-to="0" class="active" aria-current="true"></button>
+      <button data-bs-target="#c1" data-bs-slide-to="1"></button>
+    </div>
+    <div class="carousel-inner">
+      <div class="carousel-item active"><img loading="lazy" src="https://via.placeholder.com/800x300" class="d-block w-100 img-fluid"></div>
+      <div class="carousel-item"><img loading="lazy" src="https://via.placeholder.com/800x300/ddd" class="d-block w-100 img-fluid"></div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body></html>`,
+    task: 'Task: add carousel-indicators for the slides (two buttons) if missing.',
+    check: function(src){
+      const ok = /carousel-indicators/i.test(src) && /data-bs-target=["']#c1["']/i.test(src);
+      return {ok, message: ok ? 'Indicators found.' : 'Add carousel-indicators with data-bs-target="#c1" buttons.'};
+    },
+    quiz: { q:'Class for responsive image?', options:['img-fluid','img-resp','img-responsive'], answer:0 }
+  },
+
+  /* 10 */ {
+    id:'l10', title:'Utilities & Final Project', subtitle:'spacing, flex, final portfolio project',
+    theory: 'Utilities (m-*, p-*, d-*, text-*, bg-*) are quick helpers. Final project: customize header brand and add 3 project cards.',
+    example: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"></head><body>
+<header class="bg-dark text-white py-4">
+  <div class="container d-flex justify-content-between align-items-center"><h2 class="mb-0">My Portfolio</h2><nav><a class="text-white me-3" href="#">Home</a><a class="text-white" href="#">Projects</a></nav></div>
+</header>
+<main class="container py-5">
+  <div class="row g-4">
+    <div class="col-md-4"><div class="card"><img loading="lazy" src="https://via.placeholder.com/400x220" class="card-img-top"><div class="card-body"><h5 class="card-title">Project One</h5></div></div></div>
+    <div class="col-md-4"><div class="card"><img loading="lazy" src="https://via.placeholder.com/400x220/ddd" class="card-img-top"><div class="card-body"><h5 class="card-title">Project Two</h5></div></div></div>
+    <div class="col-md-4"><div class="card"><img loading="lazy" src="https://via.placeholder.com/400x220/ccc" class="card-img-top"><div class="card-body"><h5 class="card-title">Project Three</h5></div></div></div>
+  </div>
+</main>
+<footer class="bg-secondary text-white py-3"><div class="container text-center">© Portfolio</div></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body></html>`,
+    task: 'Final task: customize the header text (not "My Portfolio") and ensure there are 3 col-md-4 project cards. Then download final project when ready.',
+    check: function(src){
+      const count = (src.match(/col-md-4/gi) || []).length;
+      const notDefault = !/My Portfolio/i.test(src) && /<h2[^>]*>[^<]+<\/h2>/i.test(src);
+      return {ok: count >= 3 && notDefault, message: count < 3 ? 'Add 3 project columns (col-md-4).' : (notDefault ? 'Final project OK.' : 'Change header text from "My Portfolio" to your brand.')};
+    },
+    quiz: { q:'Which utility class adds margin-end?', options:['me-3','ms-3','mx-3'], answer:0 }
+  }
+];
+
+// UI refs
+const lessonListEl = document.getElementById('lessonList');
+const lessonTitleEl = document.getElementById('lessonTitle');
+const lessonSubtitleEl = document.getElementById('lessonSubtitle');
+const theoryEl = document.getElementById('theory');
+const editorHolder = document.getElementById('editorHolder');
+const editorFake = document.getElementById('editorFake');
+const preview = document.getElementById('preview');
+const taskEl = document.getElementById('task');
+const quizEl = document.getElementById('quiz');
+const runBtn = document.getElementById('runBtn');
+const resetExampleBtn = document.getElementById('resetExample');
+const checkBtn = document.getElementById('checkBtn');
+const checkFeedback = document.getElementById('checkFeedback');
+const lazyLoadEditorBtn = document.getElementById('lazyLoadEditor');
+const progressCountEl = document.getElementById('progressCount');
+const resetBtn = document.getElementById('resetBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const downloadFinal = document.getElementById('downloadFinal');
+const notesBtn = document.getElementById('notesBtn');
+
+let current = 0;
+let aceEditor = null;
+let editorLoaded = false;
+
+// render lesson list (lazy small)
+function renderList(){
+  lessonListEl.innerHTML = '';
+  lessons.forEach((l,i)=>{
+    const div = document.createElement('div');
+    div.className = 'lesson-item' + (i===current?' active':'');
+    div.innerHTML = `<div><strong>${i+1}. ${l.title.split('. ').slice(1).join('. ')}</strong><div class="small">${l.subtitle}</div></div>
+      <div>${progress[i] ? '<span class="badge-done">Done</span>' : ''}</div>`;
+    div.addEventListener('click', ()=>{ current=i; loadLesson(i); renderList(); });
+    lessonListEl.appendChild(div);
+  });
+  progressCountEl.textContent = progress.filter(Boolean).length;
+  const allDone = progress.every(Boolean);
+  downloadBtn.disabled = !allDone;
+  downloadFinal.disabled = !allDone;
+}
+
+// load lesson content lazily
+function loadLesson(i){
+  const l = lessons[i];
+  lessonTitleEl.textContent = (i+1) + '. ' + l.title.split('. ').slice(1).join('. ');
+  lessonSubtitleEl.textContent = l.subtitle;
+  theoryEl.textContent = l.theory;
+  // editor content saved per-lesson in localStorage
+  const saved = localStorage.getItem('bs_lesson_code_' + l.id);
+  const initial = saved || l.example;
+  // if Ace loaded, set value, else show fake
+  if(editorLoaded && aceEditor){
+    aceEditor.setValue(initial, -1);
+  } else {
+    editorFake.textContent = 'Editor not loaded. Click "Load Editor" to start editing.\n\nLesson example preview loaded when you click Run.';
+  }
+  // set task & quiz
+  taskEl.innerHTML = `<strong>Practice:</strong><div style="margin-top:6px">${l.task}</div>`;
+  // build quiz
+  quizEl.innerHTML = `<strong>Quick quiz:</strong><div style="margin-top:6px">${l.quiz.q}</div>`;
+  l.quiz.options.forEach((opt, idx)=>{
+    const id = 'q_'+i+'_'+idx;
+    quizEl.innerHTML += `<div class="form-check mt-2"><input class="form-check-input" type="radio" name="quiz_${i}" id="${id}" value="${idx}">
+      <label class="form-check-label" for="${id}">${opt}</label></div>`;
+  });
+  quizEl.innerHTML += `<div style="margin-top:8px"><button class="btn btn-sm btn-outline-light" onclick="checkQuiz(${i})">Check Quiz</button> <span id="qres_${i}" class="small"></span></div>`;
+  // preview: we don't inject srcdoc until Run clicked (lazy)
+  preview.srcdoc = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div style="padding:18px;color:#444">Preview will appear here when you click Run (it uses the lesson HTML and lazy-loads images/scripts).</div></body></html>';
+  checkFeedback.textContent = progress[i] ? '✅ Lesson completed' : 'No check yet';
+  document.getElementById('lessonStatus').textContent = progress[i] ? 'Completed' : 'Not started';
+  // save current index
+  current = i;
+}
+
+// LAZY LOAD ACE
+lazyLoadEditorBtn.addEventListener('click', async ()=>{
+  if(editorLoaded) return;
+  lazyLoadEditorBtn.disabled = true;
+  lazyLoadEditorBtn.textContent = 'Loading editor...';
+  // load Ace from CDN
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.14/ace.js');
+  // build editor element
+  editorHolder.innerHTML = '<div id="aceEditor" style="height:100%;width:100%"></div>';
+  aceEditor = ace.edit('aceEditor', {mode:'ace/mode/html',theme:'ace/theme/monokai',wrap:true});
+  aceEditor.setOptions({enableBasicAutocompletion:true,enableLiveAutocompletion:true,fontSize:13});
+  editorLoaded = true;
+  // load current lesson content
+  const saved = localStorage.getItem('bs_lesson_code_' + lessons[current].id) || lessons[current].example;
+  aceEditor.setValue(saved, -1);
+  // autosave editor content on change (debounced)
+  let timer = null;
+  aceEditor.on('change', ()=>{
+    clearTimeout(timer);
+    timer = setTimeout(()=>{ localStorage.setItem('bs_lesson_code_' + lessons[current].id, aceEditor.getValue()); }, 600);
+  });
+  lazyLoadEditorBtn.style.display = 'none';
+  lazyLoadEditorBtn.textContent = 'Load Editor';
+});
+
+// Run code — write to iframe.srcdoc; lazy-loads scripts referenced (CDN included in lesson examples)
+runBtn.addEventListener('click', ()=>{
+  const html = editorLoaded && aceEditor ? aceEditor.getValue() : (localStorage.getItem('bs_lesson_code_'+lessons[current].id) || lessons[current].example);
+  // store current
+  localStorage.setItem('bs_lesson_code_'+lessons[current].id, html);
+  // Use srcdoc to run preview in sandboxed iframe
+  preview.srcdoc = html;
+  checkFeedback.textContent = 'Preview updated (Run).';
+});
+
+// Reset example to lesson default
+resetExampleBtn.addEventListener('click', ()=>{
+  if(!editorLoaded || !aceEditor){ localStorage.removeItem('bs_lesson_code_'+lessons[current].id); loadLesson(current); alert('Reset stored code for this lesson. Load editor then run to see default.'); return; }
+  aceEditor.setValue(lessons[current].example, -1);
+  localStorage.removeItem('bs_lesson_code_'+lessons[current].id);
+  checkFeedback.textContent = 'Reset to lesson example.';
+});
+
+// Check Answer — runs lesson check by analyzing editor string (not iframe DOM to avoid timing issues)
+checkBtn.addEventListener('click', ()=>{
+  const html = editorLoaded && aceEditor ? aceEditor.getValue() : (localStorage.getItem('bs_lesson_code_'+lessons[current].id) || lessons[current].example);
+  try{
+    const res = lessons[current].check(html + ''); // pass string
+    if(res.ok){ progress[current]=true; localStorage.setItem(LESSON_KEY, JSON.stringify(progress)); checkFeedback.textContent = '✅ ' + res.message; renderList(); document.getElementById('lessonStatus').textContent = 'Completed'; }
+    else { checkFeedback.textContent = '✖ ' + res.message; }
+  } catch(err){
+    checkFeedback.textContent = 'Error during check: ' + err.message;
+  }
+});
+
+// quiz check helper
+function checkQuiz(i){
+  const radios = document.getElementsByName('quiz_'+i);
+  let val = null;
+  for(const r of radios) if(r.checked) val = Number(r.value);
+  const out = document.getElementById('qres_'+i);
+  if(val === null){ out.textContent = ' Select an option.'; return; }
+  out.textContent = (val === lessons[i].quiz.answer) ? ' ✅ Correct!' : ' ✖ Incorrect — try again.';
+}
+
+// helper to load external script
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('Failed to load '+src)); document.head.appendChild(s); }); }
+
+// Notes button
+notesBtn.addEventListener('click', ()=> alert('How to use:\n1) Click a lesson on the left\n2) Load editor (first time) to enable live editing\n3) Edit HTML and click Run to preview\n4) Click Check Answer for automated feedback\nProgress is saved to your browser.'));
+
+// reset progress
+resetBtn.addEventListener('click', ()=>{
+  if(!confirm('Reset all saved progress and code for lessons?')) return;
+  progress = Array(lessons.length).fill(false);
+  localStorage.setItem(LESSON_KEY, JSON.stringify(progress));
+  // remove saved lesson code
+  lessons.forEach(l=> localStorage.removeItem('bs_lesson_code_'+l.id));
+  renderList();
+  loadLesson(0);
+  if(editorLoaded && aceEditor) aceEditor.setValue(lessons[0].example, -1);
+});
+
+// Download final — composes final lesson HTML and downloads
+downloadBtn.addEventListener('click', ()=> downloadFinalProject());
+downloadFinal.addEventListener('click', ()=> downloadFinalProject());
+function downloadFinalProject(){
+  // get final lesson code (lesson 10) if saved or current editor
+  const finalSrc = localStorage.getItem('bs_lesson_code_' + lessons[9].id) || lessons[9].example;
+  const blob = new Blob([finalSrc], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'bootstrap-final-project.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+// render list & load first lesson
+renderList();
+loadLesson(0);
+
+// periodically enable download button if all lessons done
+setInterval(()=>{ const all = progress.every(Boolean); downloadBtn.disabled = !all; downloadFinal.disabled = !all; }, 800);
+
+</script>
+</body>
+</html>
